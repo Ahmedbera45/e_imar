@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
 namespace eImar.Domain.Entities
@@ -7,10 +8,12 @@ namespace eImar.Domain.Entities
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
 
-        public int ProcessStepRef { get; set; }
+        public int ProcessStepId { get; set; }
+        [ForeignKey("ProcessStepId")]
         public ProcessStep ProcessStep { get; set; } = null!;
 
-        public int? DefaultProcessActionConditionRef { get; set; }
+        public int? DefaultProcessActionConditionId { get; set; }
+        [ForeignKey("DefaultProcessActionConditionId")]
         public ProcessActionCondition? DefaultProcessActionCondition { get; set; }
 
         public ICollection<ProcessActionCondition> ProcessActionConditions { get; set; } = new List<ProcessActionCondition>();

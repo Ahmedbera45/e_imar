@@ -1,13 +1,23 @@
-// ...
-public class ProcessActionHistoryEntry
-{
-    public int Id { get; set; }
-    // ...
-    public int ProcessActionId { get; set; } // Ref -> Id
-    [ForeignKey("ProcessActionId")]
-    public ProcessAction ProcessAction { get; set; } = null!;
+using System.ComponentModel.DataAnnotations.Schema; // Bu satır ForeignKey hatasını çözer
 
-    public int ProcessApplicationId { get; set; } // Ref -> Id
-    [ForeignKey("ProcessApplicationId")]
-    public ProcessApplication ProcessApplication { get; set; } = null!;
+namespace eImar.Domain.Entities
+{
+    public class ProcessActionHistoryEntry
+    {
+        public int Id { get; set; }
+        public int EntryOrder { get; set; }
+        public string LogString { get; set; } = string.Empty;
+
+        // Ref -> Id dönüşümü
+        public int ProcessActionId { get; set; }
+        
+        [ForeignKey("ProcessActionId")]
+        public ProcessAction ProcessAction { get; set; } = null!;
+
+        // Ref -> Id dönüşümü
+        public int ProcessApplicationId { get; set; }
+        
+        [ForeignKey("ProcessApplicationId")]
+        public ProcessApplication ProcessApplication { get; set; } = null!;
+    }
 }

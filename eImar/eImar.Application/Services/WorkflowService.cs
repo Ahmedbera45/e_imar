@@ -24,26 +24,21 @@ namespace eImar.Application.Services
             if (process == null) throw new Exception("Process not found.");
 
             var firstStep = await _context.ProcessSteps
-                .Where(s => s.ProcessRef == processId)
+                .Where(s => s.ProcessId == processId) // Ref -> Id
                 .OrderBy(s => s.Id)
                 .FirstOrDefaultAsync();
             if (firstStep == null) throw new Exception("Process has no starting step.");
 
             var application = new ProcessApplication
             {
-                ProcessRef = processId,
-                CurrentProcessStepRef = firstStep.Id,
-                BasvuranWebUserRef = userId,
-                State = 0 // Default initial state
+                ProcessId = processId, // Ref -> Id
+                CurrentProcessStepId = firstStep.Id, // Ref -> Id
+                BasvuranWebUserId = userId, // Ref -> Id
+                State = 0 
             };
 
             _context.ProcessApplications.Add(application);
             await _context.SaveChangesAsync(new System.Threading.CancellationToken());
-            
-            // Here you would typically process the 'initialData' dictionary and create
-            // ProcessEntryAnswer records associated with this ProcessApplication.
-            // This logic is omitted for brevity.
-
             return application.Id;
         }
 
@@ -68,34 +63,26 @@ namespace eImar.Application.Services
             var application = await _context.ProcessApplications.FindAsync(processApplicationId);
             if (application == null) throw new Exception("Application not found.");
             
-            // Corrected Authorization Logic (v2):
-            // 1. Get all Role Ids for the given userId.
-            // 2. Check if any of those roles are associated with a ProcessStepAuthorization
-            //    that is linked to the current process step.
+            // Kullanıcı yetki kontrolü
             var userRoleIds = await _context.WebUsers
                 .Where(u => u.Id == userId)
-                .SelectMany(u => u.Roles.Select(r => (int?)r.Id)) // Cast to nullable int
-                .Where(id => id.HasValue) // Filter out nulls
-                .Select(id => id.Value) // Select the non-null value
+                .SelectMany(u => u.Roles.Select(r => (int?)r.Id))
+                .Where(id => id.HasValue)
+                .Select(id => id.Value)
                 .ToListAsync();
 
-            if (!userRoleIds.Any())
-            {
-                return Enumerable.Empty<ActionViewModel>(); // User not found or has no roles
-            }
+            if (!userRoleIds.Any()) return Enumerable.Empty<ActionViewModel>();
 
+            // Ref -> Id değişiklikleri burada kritik
             var isAuthorized = await _context.ProcessStepAuthorizations
-                .AnyAsync(auth => auth.ProcessSteps.Any(s => s.Id == application.CurrentProcessStepRef) &&
-                                 auth.ProcessRole.RoleRef.HasValue &&
-                                 userRoleIds.Contains(auth.ProcessRole.RoleRef.Value));
+                .AnyAsync(auth => auth.ProcessSteps.Any(s => s.Id == application.CurrentProcessStepId) &&
+                                 auth.ProcessRole.RoleId.HasValue && // Ref -> Id
+                                 userRoleIds.Contains(auth.ProcessRole.RoleId.Value));
 
-            if (!isAuthorized)
-            {
-                return Enumerable.Empty<ActionViewModel>();
-            }
+            if (!isAuthorized) return Enumerable.Empty<ActionViewModel>();
 
             return await _context.ProcessActions
-                .Where(a => a.ProcessStepRef == application.CurrentProcessStepRef)
+                .Where(a => a.ProcessStepId == application.CurrentProcessStepId) // Ref -> Id
                 .Select(a => new ActionViewModel
                 {
                     ActionId = a.Id,
@@ -111,26 +98,20 @@ namespace eImar.Application.Services
 
             var action = await _context.ProcessActions
                 .Include(a => a.ProcessActionConditions)
-                .FirstOrDefaultAsync(a => a.Id == actionId && a.ProcessStepRef == application.CurrentProcessStepRef);
-            if (action == null) throw new Exception("Invalid action for the current state.");
+                .FirstOrDefaultAsync(a => a.Id == actionId && a.ProcessStepId == application.CurrentProcessStepId); // Ref -> Id
             
-            // Simplified authorization check. A more robust implementation from GetAvailableActionsAsync should be used.
-            // bool isAuthorized = await IsUserAuthorizedForAction(userId, application.CurrentProcessStepRef);
-            // if (!isAuthorized) throw new Exception("User is not authorized to perform this action.");
+            if (action == null) throw new Exception("Invalid action for the current state.");
 
             int nextStepId = -1;
 
-            // Evaluate conditions to find the next step
             foreach (var condition in action.ProcessActionConditions.OrderBy(c => c.OrderOfCondition))
             {
                 bool conditionMet = false;
-                if (condition.ConditionedProcessEntryRef.HasValue)
+                if (condition.ConditionedProcessEntryId.HasValue) // Ref -> Id
                 {
-                    // This is a conditional transition based on an answer
                     var answer = await _context.ProcessEntryAnswers
-                        .FirstOrDefaultAsync(ans => ans.ProcessApplicationRef == application.Id && ans.ProcessEntryRef == condition.ConditionedProcessEntryRef.Value);
+                        .FirstOrDefaultAsync(ans => ans.ProcessApplicationId == application.Id && ans.ProcessEntryId == condition.ConditionedProcessEntryId.Value); // Ref -> Id
                     
-                    // This is a simplified check. A real implementation would need to handle different data types (bool, text, number).
                     if (answer != null && answer.TextAnswer == condition.ConditionedProcessEntryAnswerValue)
                     {
                         conditionMet = true;
@@ -138,34 +119,30 @@ namespace eImar.Application.Services
                 }
                 else
                 {
-                    // This is an unconditional transition (default case)
-                    conditionMet = true;
+                    conditionMet = true; // Koşulsuz geçiş
                 }
 
                 if (conditionMet)
                 {
-                    nextStepId = condition.ToProcessStepRef;
+                    nextStepId = condition.ToProcessStepId; // Ref -> Id
                     break;
                 }
             }
 
-            if (nextStepId == -1)
-            {
-                throw new Exception("No valid transition found for the action and current application state.");
-            }
+            if (nextStepId == -1) throw new Exception("No valid transition found.");
 
-            // Log the action history
+            // Loglama
             var historyEntry = new ProcessActionHistoryEntry
             {
-                ProcessApplicationRef = processApplicationId,
-                ProcessActionRef = actionId,
+                ProcessApplicationId = processApplicationId, // Ref -> Id
+                ProcessActionId = actionId, // Ref -> Id
                 LogString = $"User {userId} performed action {action.Title}.",
-                EntryOrder = (_context.ProcessActionHistoryEntries.Count(h => h.ProcessApplicationRef == processApplicationId) + 1)
+                EntryOrder = (_context.ProcessActionHistoryEntries.Count(h => h.ProcessApplicationId == processApplicationId) + 1)
             };
             _context.ProcessActionHistoryEntries.Add(historyEntry);
 
-            // Update the application state
-            application.CurrentProcessStepRef = nextStepId;
+            // Durumu güncelle
+            application.CurrentProcessStepId = nextStepId; // Ref -> Id
 
             await _context.SaveChangesAsync(new System.Threading.CancellationToken());
         }

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="eImar.Api/eImar.Api.csproj" />
+  <Project Path="eImar.Application/eImar.Application.csproj" />
+  <Project Path="eImar.Domain/eImar.Domain.csproj" />
+  <Project Path="eImar.Infrastructure/eImar.Infrastructure.csproj" />
+</Solution>

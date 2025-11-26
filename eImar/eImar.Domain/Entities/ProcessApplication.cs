@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
 namespace eImar.Domain.Entities
@@ -7,13 +8,16 @@ namespace eImar.Domain.Entities
         public int Id { get; set; }
         public int State { get; set; }
 
-        public int ProcessRef { get; set; }
+        public int ProcessId { get; set; }
+        [ForeignKey("ProcessId")]
         public Process Process { get; set; } = null!;
 
-        public int CurrentProcessStepRef { get; set; }
+        public int CurrentProcessStepId { get; set; }
+        [ForeignKey("CurrentProcessStepId")]
         public ProcessStep CurrentProcessStep { get; set; } = null!;
 
-        public int BasvuranWebUserRef { get; set; }
+        public int BasvuranWebUserId { get; set; }
+        [ForeignKey("BasvuranWebUserId")]
         public WebUser BasvuranWebUser { get; set; } = null!;
 
         public ICollection<ProcessEntryAnswer> ProcessEntryAnswers { get; set; } = new List<ProcessEntryAnswer>();

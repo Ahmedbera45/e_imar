@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
 namespace eImar.Domain.Entities
@@ -8,10 +9,14 @@ namespace eImar.Domain.Entities
         public string Title { get; set; } = string.Empty;
         public string DisplayTitle { get; set; } = string.Empty;
 
-        public int ProcessRef { get; set; }
+        // ProcessRef -> ProcessId
+        public int ProcessId { get; set; }
+        [ForeignKey("ProcessId")]
         public Process Process { get; set; } = null!;
 
-        public int ProcessStepTypeRef { get; set; }
+        // ProcessStepTypeRef -> ProcessStepTypeId
+        public int ProcessStepTypeId { get; set; }
+        [ForeignKey("ProcessStepTypeId")]
         public ProcessStepType ProcessStepType { get; set; } = null!;
 
         public ICollection<ProcessStepAuthorization> ProcessStepAuthorizations { get; set; } = new List<ProcessStepAuthorization>();

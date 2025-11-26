@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema; // Bu satırı eklemeyi unutma!
 
 namespace eImar.Domain.Entities
 {
@@ -17,10 +18,18 @@ namespace eImar.Domain.Entities
         public string TahakkukId { get; set; } = string.Empty;
         public bool? TahakkukYapilmisMi { get; set; }
 
-        public int ProcessApplicationRef { get; set; }
+        // --- DEĞİŞİKLİK BURADA ---
+        // Eskiden 'ProcessApplicationRef' idi, 'ProcessApplicationId' yaptık.
+        public int ProcessApplicationId { get; set; }
+        
+        [ForeignKey("ProcessApplicationId")]
         public ProcessApplication ProcessApplication { get; set; } = null!;
 
-        public int ProcessEntryRef { get; set; }
+        // --- DEĞİŞİKLİK BURADA ---
+        // Eskiden 'ProcessEntryRef' idi, 'ProcessEntryId' yaptık.
+        public int ProcessEntryId { get; set; }
+
+        [ForeignKey("ProcessEntryId")]
         public ProcessEntry ProcessEntry { get; set; } = null!;
 
         public ICollection<DocumentInProcessEntryAnswer> DocumentInProcessEntryAnswers { get; set; } = new List<DocumentInProcessEntryAnswer>();

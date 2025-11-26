@@ -9,11 +9,9 @@ namespace eImar.Infrastructure.Data
 {
     public class AppDbContext : DbContext, IAppDbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Entities from the database schema
+        // DbSet Tanımları (Aynen kalsın, burayı kısaltıyorum...)
         public DbSet<Process> Processes { get; set; }
         public DbSet<ProcessStep> ProcessSteps { get; set; }
         public DbSet<ProcessAction> ProcessActions { get; set; }
@@ -52,7 +50,29 @@ namespace eImar.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Apply seed data
+            // KRİTİK AYARLAR: Dairesel Bağımlılıkları Yönetme
+            modelBuilder.Entity<ProcessAction>(entity =>
+            {
+                entity.HasOne(pa => pa.DefaultProcessActionCondition)
+                      .WithOne() // Bire-bir veya Bire-çok, duruma göre
+                      .HasForeignKey<ProcessAction>(pa => pa.DefaultProcessActionConditionId)
+                      .OnDelete(DeleteBehavior.Restrict); // Döngüsel silmeyi engelle
+            });
+
+            modelBuilder.Entity<ProcessActionCondition>(entity =>
+            {
+                entity.HasOne(pac => pac.ProcessAction)
+                      .WithMany(pa => pa.ProcessActionConditions)
+                      .HasForeignKey(pac => pac.ProcessActionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(pac => pac.ToProcessStep)
+                      .WithMany()
+                      .HasForeignKey(pac => pac.ToProcessStepId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Seed Data'yı Aktif Et
             WorkflowSeed.Seed(modelBuilder);
         }
     }
